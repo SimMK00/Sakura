@@ -28,6 +28,7 @@ client.on("message", msg => {
             }
         case 'flip':
             msg.channel.send({file:[]})
+            msg.delete();
     }
     
 })
