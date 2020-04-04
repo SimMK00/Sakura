@@ -27,8 +27,15 @@ client.on("message", msg => {
                 msg.channel.send(`${args[1]} messages have been deleted!`).then(d_msg =>{d_msg.delete({timeout:5000})});
             }
         case 'flip':
-            msg.channel.send({file:[]})
-            msg.delete();
+            let flipnum = Math.round(Math.random());
+            if (flipnum == 0){
+                msg.channel.send(`${msg.author.username} has flipped **head**`,{files:["./images/head.png"]})
+            } else {
+                msg.channel.send(`${msg.author.username} has flipped **tail**`,{files:["./images/tail.png"]})
+            }
+           
+        case 'play':
+    
     }
     
 })
