@@ -19,13 +19,15 @@ client.on("message", msg => {
         case 'ping':
             msg.channel.send(`Pong!\nThe latency is ${Date.now()-msg.createdTimestamp}ms`)
 
-        case 'bulkdelete':
+        case 'prune':
             if(!args[1]){
                 msg.channel.send(`Please provide a valid number~`).then(d_msg =>{d_msg.delete({timeout:5000})});
             } else {
                 msg.channel.bulkDelete(args[1]);
                 msg.channel.send(`${args[1]} messages have been deleted!`).then(d_msg =>{d_msg.delete({timeout:5000})});
             }
+        case 'flip':
+            msg.channel.send({file:[]})
     }
     
 })
