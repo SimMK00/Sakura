@@ -3,7 +3,7 @@ const { prefix, token } = require('./config.json');
 const client = new Discord.Client();
 const fs = require('fs');
 const { join } = require('path');
-
+const helo = "s";
 client.queue = new Map();
 client.commands = new Discord.Collection();
 
