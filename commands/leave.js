@@ -6,7 +6,7 @@ module.exports = {
         const serverQueue = msg.client.queue.get(msg.guild.id);
 
         if (serverQueue) {
-            queue.delete(msg.guild.id);
+            msg.client.queue.delete(msg.guild.id);
         }
         voiceChannel.leave();
     }

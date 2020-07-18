@@ -6,8 +6,9 @@ module.exports = {
         
         if (serverQueue) {
             for (i = 0; i < serverQueue.songs.length; i++) {
-                msg.channel.send(serverQueue.songs[i].title);
+                output += `${i}: **${serverQueue.songs[i].title}**`;
             }
+            msg.channel.send(output);
         };
     }
 }

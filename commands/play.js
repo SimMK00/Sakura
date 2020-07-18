@@ -9,10 +9,10 @@ module.exports = {
     const { youtube_api_key } = require("../config.json");
     const youtube = new youtubeApi(youtube_api_key);
     const Discord = require("discord.js");
-    
-    let args = argsOrg.splice(1,argsOrg.length-1);
+
+    let args = argsOrg.splice(1, argsOrg.length - 1);
     args = args.join(' ');
-    console.log(args)
+
     if (!voiceChannel) {
       return msg.channel.send("You need to be in a voice channel to play music!");
     }
@@ -25,19 +25,26 @@ module.exports = {
       }
       execute(song);
     } else {
-      let result = await youtube.search(args, 3);
+      let result = await youtube.search(args, 10);
       let output = ``;
       let count = 1;
-      result.forEach(res => {
+      result.forEach(async res => {
         if (res.type != "channel") {
           output += `${count}: **${res.title}**\n`;
           count++;
         }
       })
-      await msg.channel.send(output).then(msg => {msg.delete({timeout: 10000})})
-      const collector = new Discord.MessageCollector(msg.channel, m=> m.author.id == msg.author.id, {time: 10000, max:2});
-      collector.on("collect", message =>{
-        msg.channel.send(message.content);
+      await msg.channel.send(output).then(msg => { msg.delete({ timeout: 5000 }) })
+      const collector = new Discord.MessageCollector(msg.channel, m => m.author.id == msg.author.id, { time: 5000, max: 5 });
+      collector.on("collect", message => {
+        choice = parseInt(message)-1;
+        if (result[choice] && result[choice].type != "channel") {
+          let song = {
+            title: result[choice].title,
+            url: result[choice].url
+          }
+          execute(song);
+        }
       })
     }
 
@@ -88,29 +95,5 @@ module.exports = {
       dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
       serverQueue.textChannel.send(`Started playing: **${song.title}**`);
     }
-    /*
-    let validate =  ytdl.validateURL(args[1]);
-    let info =  ytdl.getInfo(args[1]);
-    const search = require('yt-search');
- 
-    if (!validate){
-        search(args[1],(err,result)=>{
-            //First 10 results only
-            let video = result.videos.slice(0,10);
-            
-            let videoloop = "";
-            for (var i in video){
-                videoloop += `${parseInt(i)+ 1} \${videos[i].title}\n`
-            
-            }
-            msg.channel.send(videoloop)
-        })
-      
-    } else {
-        
-    }
-    */
-
-
   }
 }
