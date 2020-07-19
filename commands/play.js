@@ -25,20 +25,34 @@ module.exports = {
       }
       execute(song);
     } else {
-      let result = await youtube.search(args, 10);
+      let result = await youtube.search(args, 20);
       let output = ``;
-      let count = 1;
-      result.forEach(async res => {
-        if (res.type != "channel") {
-          output += `${count}: **${res.title}**\n`;
-          count++;
+
+      // result.forEach(async res => {
+      //   if (res.type != "channel") {
+      //     output += `${count}: **${res.title}**\n`;
+      //     count++;
+      //   }
+      // })
+      for (let i = 0; i < result.length; i++) {
+        if (result[i].type == "channel" || result[i] == "playlist") {
+          result.splice(i, 1);
         }
-      })
-      await msg.channel.send(output).then(msg => { msg.delete({ timeout: 5000 }) })
-      const collector = new Discord.MessageCollector(msg.channel, m => m.author.id == msg.author.id, { time: 5000, max: 5 });
+      }
+
+      if (result) {
+        for (let i = 0; i < 10; i++) {
+          output += `${i+1}: **${result[i].title}**\n`;
+        }
+        await msg.channel.send(output).then(msg => { msg.delete({ timeout: 10000 }) });
+      } else {
+        msg.channel.send("No results have been found").then(msg => {msg.delete({timeout:4000})});
+      }
+
+      const collector = new Discord.MessageCollector(msg.channel, m => m.author.id == msg.author.id, { time: 10000, max: 1 });
       collector.on("collect", message => {
-        choice = parseInt(message)-1;
-        if (result[choice] && result[choice].type != "channel") {
+        choice = parseInt(message) - 1;
+        if (result[choice] && result[choice].type != "channel" && result[choice].type != "playlist") {
           let song = {
             title: result[choice].title,
             url: result[choice].url
@@ -73,7 +87,7 @@ module.exports = {
         }
       } else {
         serverQueue.songs.push(song);
-        return msg.channel.send(`${song.title} has been added to the queue!`);
+        return msg.channel.send(`The song **${song.title}** has been added to the queue!`);
       }
     }
 

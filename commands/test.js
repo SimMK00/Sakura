@@ -7,9 +7,10 @@ module.exports = {
             .setColor("#C70039")
             .setTitle("?")
             .addFields(
-                {name: "first", value: "1"},
+                {name: "first", value: "1", },
                 {name: "second", value: "2nd"},
             )
+            .setURL("https://www.google.com.my/");
         msg.channel.send(embed);
     }                                               
 }
