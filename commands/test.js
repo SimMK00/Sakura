@@ -5,7 +5,7 @@ module.exports = {
         const Discord = require("discord.js");
         const embed = new Discord.MessageEmbed()
             .setColor("#C70039")
-            .setTitle("?")
+            .setTitle("testing test")
             .addFields(
                 {name: "first", value: "1", },
                 {name: "second", value: "2nd"},
