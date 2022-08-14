@@ -1,7 +1,10 @@
+const { SlashCommandBuilder } = require('@discordjs/builders');
+
 module.exports = {
-    name: "ping",
-    description: "Returns latency",
-    execute(msg){
-        msg.channel.send(`Pong!\nThe latency is ${Date.now()-msg.createdTimestamp}ms`);
+    data: new SlashCommandBuilder()
+        .setName("ping")
+        .setDescription("Returns latency"),
+    async execute(interaction){
+        await interaction.reply(`Pong!\nThe latency is ${Date.now()-interaction.createdTimestamp}ms`);
     } 
 }
