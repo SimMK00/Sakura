@@ -7,6 +7,7 @@ module.exports = {
         .setDescription("Bulk delete messages")
         .addIntegerOption(option =>
             option.setName("number")
+            .setRequired(true)
             .setDescription("Number of messages to delete")),
     /**
      * 
