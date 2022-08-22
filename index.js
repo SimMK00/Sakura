@@ -1,12 +1,11 @@
 const Discord = require('discord.js');
 const { Intents } = require('discord.js');
-const { token, CLIENT_ID } = require('./config.json');
 const client = new Discord.Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_VOICE_STATES] });
 const fs = require('fs');
 const { join } = require('path');
 const { REST } = require('@discordjs/rest');
 const { Routes, ComponentType } = require('discord-api-types/v9');
-
+require('dotenv').config();
 
 
 client.queue = new Map();
@@ -31,12 +30,12 @@ for (const file of selectFiles) {
 
 
 //Registering commands via rest
-const rest = new REST({version: '9'}).setToken(token);
+const rest = new REST({version: '9'}).setToken(process.env.TOKEN);
 (async () => {
 	try {
 		console.log('Started refreshing application (/) commands.');
 		await rest.put(
-			Routes.applicationCommands(CLIENT_ID),
+			Routes.applicationCommands(process.env.CLIENT_ID),
 			{ body: commands },
 		);
 
@@ -98,4 +97,4 @@ client.on('interactionCreate', async (interaction)=>{
 
 
 // login to Discord with your app's token
-client.login(token);
+client.login(process.env.TOKEN);
