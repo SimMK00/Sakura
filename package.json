@@ -26,17 +26,14 @@
     "nodemon": "^2.0.19",
     "opusscript": "^0.0.8",
     "simple-youtube-api": "^5.2.1",
+    "sqlite3": "^5.1.1",
     "ytdl-core": "^4.9.1"
   },
   "author": "",
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/CynericS/Cyneric.git"
+    "url": "git+https://github.com/SimMK00/Cyneric.git"
   },
-  "bugs": {
-    "url": "https://github.com/CynericS/Cyneric/issues"
-  },
-  "homepage": "https://github.com/CynericS/Cyneric#readme",
   "description": ""
 }
