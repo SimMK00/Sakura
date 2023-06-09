@@ -13,16 +13,36 @@ module.exports = {
      * @param {Discord.BaseCommandInteraction} interaction 
      */
     async execute(interaction) {
-        const embed = new Discord.MessageEmbed();
-        const user = interaction.options.getUser("target")
-        await interaction.channel.send({
-            embeds: [
-                embed.setAuthor({
-                    name: `${interaction.user.tag}`,
-                    iconURL: interaction.user.avatarURL()
-                }).setDescription(`Id of ${user.username} is ${user.id}`)
-            ]
-        })
-        
+        try {
+            const user = interaction.options.getUser("target")
+
+            const embed = new Discord.EmbedBuilder()
+            .setAuthor({
+                name: `${interaction.user.username}`,
+                iconURL: interaction.user.avatarURL()
+            })
+            .setDescription(`Id of ${user.username} is ${user.id}`)
+
+
+            await interaction.reply({
+                embeds: [embed],
+                ephemeral: true,
+            })
+
+        } catch (error){
+            const embed = new Discord.EmbedBuilder()
+            .setAuthor({
+                name: `${interaction.user.username}`,
+                iconURL: interaction.user.avatarURL()
+            })
+            .setDescription("Failed to get id of user")
+
+            await interaction.reply({
+                embeds: [embed],
+                ephemeral: true,
+            })
+
+            console.log(error)
+        }
     }
 }
