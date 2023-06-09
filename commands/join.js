@@ -12,31 +12,46 @@ module.exports = {
      */
     async execute(interaction){
         try {
-            const embed = new Discord.MessageEmbed();
-            embed.setAuthor({
-                name: `${interaction.user.tag}`,
-                iconURL: interaction.user.avatarURL()
-            }).setColor("LUMINOUS_VIVID_PINK")
-            .setDescription("joined");
-    
-            await interaction.reply({
-                embeds: [
-                    embed
-                ],
-                ephemeral: true
-            })
-    
-            const connection = voice.joinVoiceChannel({
-                channelId: interaction.member.voice.channel.id,
-                guildId: interaction.guild.id,
-                adapterCreator: interaction.guild.voiceAdapterCreator
-            })
-            
-            
-            interaction.voiceConnection = connection;
 
+            if (!interaction.member.voice.channel){
+                return interaction.reply('You need to be in a voice channel!')
+            } else {
 
+                const connection = voice.joinVoiceChannel({
+                    channelId: interaction.member.voice.channel.id,
+                    guildId: interaction.guild.id,
+                    adapterCreator: interaction.guild.voiceAdapterCreator
+                })
+                
+                interaction.guild.voiceConnection = connection;
+                
+                const embed = new Discord.EmbedBuilder()
+                .setAuthor({
+                    name: `${interaction.user.username}`,
+                    iconURL: interaction.user.avatarURL()
+                })
+                .setDescription(`Joined voice channel: ${interaction.member.voice.channel.name}`)
+        
+                await interaction.reply({
+                    embeds: [embed],
+                    ephemeral: true,
+                })
+        
+
+            }
         } catch (error) {
+            const embed = new Discord.EmbedBuilder()
+                .setAuthor({
+                    name: `${interaction.user.username}`,
+                    iconURL: interaction.user.avatarURL()
+                })
+                .setDescription("Failed to join the voice channel")
+
+            await interaction.reply({
+                embeds: [embed],
+                ephemeral: true,
+            })
+
             console.log(error)
         }
        
