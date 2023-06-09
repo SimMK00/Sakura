@@ -38,7 +38,6 @@ module.exports = {
             await interaction.reply({
                 embeds: [embed],
                 files: [attachment],
-                ephemeral: true,
             })
 
         } catch (error) {
@@ -53,7 +52,6 @@ module.exports = {
 
             await interaction.reply({
                 embeds: [embed],
-                ephemeral: true,
             })
 
             console.log(error)
