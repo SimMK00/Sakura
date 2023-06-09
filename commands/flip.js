@@ -13,25 +13,49 @@ module.exports = {
     async execute(interaction){
         try {
             const flipnum = Math.round(Math.random());
-            const embed = new Discord.MessageEmbed();
-
-            embed.setAuthor({
-                name: `${interaction.user.tag}`,
-                iconURL: interaction.user.avatarURL()
-            }).setColor("LUMINOUS_VIVID_PINK")
-
+            const embed = new Discord.EmbedBuilder()
+                .setAuthor({
+                    name: `${interaction.user.username}`,
+                    iconURL: interaction.user.avatarURL()
+                })
+                .setColor("LuminousVividPink")
+            
+            var attachment;
             if (flipnum == 0){
-                embed.setDescription(`${interaction.user.username} has flipped **head**`).setImage("https://cdn.discordapp.com/attachments/696045581180862585/1005774664167063613/head.png")
+                attachment = new Discord.AttachmentBuilder('./images/head.png');
+
+                embed
+                    .setDescription(`${interaction.user.username} has flipped **head**`)
+                    .setImage(('attachment://head.png'))
             } else {
-                embed.setDescription(`${interaction.user.username} has flipped **tail**`).setImage("https://cdn.discordapp.com/attachments/696045581180862585/1005776838691409950/tail.png")
+                attachment = new Discord.AttachmentBuilder('./images/tail.png');
+                
+                embed
+                    .setDescription(`${interaction.user.username} has flipped **tail**`)
+                    .setImage(('attachment://tail.png'))
             }
 
             await interaction.reply({
-                embeds: [
-                    embed
-                ]
+                embeds: [embed],
+                files: [attachment],
+                ephemeral: true,
             })
+
         } catch (error) {
+
+            const embed = new Discord.EmbedBuilder()
+            .setAuthor({
+                name: `${interaction.user.username}`,
+                iconURL: interaction.user.avatarURL()
+            })
+            .setColor("LuminousVividPink")
+            .setDescription("Failed to perform command")
+
+            await interaction.reply({
+                embeds: [embed],
+                ephemeral: true,
+            })
+
             console.log(error)
         }
     } 
