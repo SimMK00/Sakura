@@ -21,6 +21,7 @@ module.exports = {
                     name: `${interaction.user.username}`,
                     iconURL: interaction.user.avatarURL()
                 })
+                .setColor("LuminousVividPink")
                 .setDescription("Left voice channel")
 
                 await interaction.reply({
@@ -37,6 +38,7 @@ module.exports = {
                     name: `${interaction.user.username}`,
                     iconURL: interaction.user.avatarURL()
                 })
+                .setColor("LuminousVividPink")
                 .setDescription("Failed to leave the voice channel")
 
             await interaction.reply({

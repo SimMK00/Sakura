@@ -30,6 +30,7 @@ module.exports = {
                     name: `${interaction.user.username}`,
                     iconURL: interaction.user.avatarURL()
                 })
+                .setColor("LuminousVividPink")
                 .setDescription(`Joined voice channel: ${interaction.member.voice.channel.name}`)
         
                 await interaction.reply({
@@ -45,6 +46,7 @@ module.exports = {
                     name: `${interaction.user.username}`,
                     iconURL: interaction.user.avatarURL()
                 })
+                .setColor("LuminousVividPink")
                 .setDescription("Failed to join the voice channel")
 
             await interaction.reply({
