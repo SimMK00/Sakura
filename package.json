@@ -18,7 +18,8 @@
     "@discordjs/voice": "^0.8.0",
     "axios": "^0.27.2",
     "discord-api-types": "^0.37.1",
-    "discord.js": "^13.9.2",
+    "discord.js": "^14.11.0",
+    "discordx": "^11.7.4",
     "dotenv": "^16.0.1",
     "eslint": "^8.2.0",
     "ffmpeg-static": "^4.4.0",
@@ -29,11 +30,11 @@
     "sqlite3": "^5.1.1",
     "ytdl-core": "^4.9.1"
   },
-  "author": "",
+  "author": "Sim",
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SimMK00/Cyneric.git"
+    "url": "git+https://github.com/SimMK00/Sakura.git"
   },
   "description": ""
 }
