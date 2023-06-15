@@ -1,5 +1,6 @@
 const Discord = require('discord.js');
 const Voice = require("@discordjs/voice");
+const { getAudioPlayer, playPlaysoundSelect } = require('../utils/audioUtils.js')
 
 module.exports = {
     name: "playsoundSelect",
@@ -8,37 +9,28 @@ module.exports = {
      * @param {Discord.MessageComponentInteraction} interaction 
      */
     async execute(interaction) {
-        const embed = new Discord.MessageEmbed();
-        const player = new Voice.AudioPlayer();
+        const player = getAudioPlayer();
         const baseUrl = "http://www.myinstants.com/media/sounds/"
+        if (player.state.status != Voice.AudioPlayerStatus.Playing){
+            // Disable interaction failed message
+            await interaction.deferUpdate();
 
-        // Disable interaction failed message
-        await interaction.deferUpdate();
+            if (interaction.values[0] == "EMPTY") return;
+            playPlaysoundSelect(baseUrl, player, interaction);
+        } else {
 
-        if (interaction.values[0] == "EMPTY") return;
-        playPlaysound(baseUrl, player, interaction);
+            const replyEmbed = new Discord.EmbedBuilder()
+                .setAuthor({
+                name: `${interaction.user.username}`,
+                iconURL: interaction.user.avatarURL()
+                })
+                .setColor("LuminousVividPink")
+                .setDescription("The bot is currently playing another playsound.")
+            
+            await interaction.reply({
+                embeds: [replyEmbed],
+                ephemeral: true
+            })
+        }
     }
-}
-
-function playPlaysound(baseUrl, player, interaction){
-
-    // Reconstructing url
-    audioUrl = baseUrl + interaction.values[0];
-
-    // Create audio resource 
-    let resource = Voice.createAudioResource(audioUrl);
-
-    // Establish a connection to the voice channel
-    let connection = Voice.getVoiceConnection(interaction.guildId);
-    if (!connection){
-        connection = Voice.joinVoiceChannel({
-            channelId: interaction.member.voice.channelId,
-            guildId: interaction.guildId,
-            adapterCreator: interaction.guild.voiceAdapterCreator
-        })
-    }
-    
-    // Plays the audio resource
-    player.play(resource);
-    connection.subscribe(player);
 }

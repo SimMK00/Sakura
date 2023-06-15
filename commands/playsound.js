@@ -1,7 +1,14 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const voice = require("@discordjs/voice");
+const { getAudioPlayer } = require('../state/playerState.js');
+const { playPlaysoundExact, getPlaysounds} = require('../utils/audioUtils.js');
+const voice = require("@discordjs/voice"); 
 const Discord = require('discord.js');
-const axios = require("axios").default;
+const player = getAudioPlayer();
+const { ComponentType } = require('discord.js');
+
+var pageNum = 1;
+var stringSelectCollector = null;
+var buttonCollector = null;
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -13,170 +20,150 @@ module.exports = {
             .setDescription("Name of playsound"))
         .addBooleanOption(option=>
             option.setName("exact")
+            .setRequired(true)
             .setDescription("Search for exact playsound")),
     /**
      * 
      * @param {Discord.BaseCommandInteraction} interaction 
      */
     async execute(interaction){
+
         const playsoundName = interaction.options.get("playsoundname").value;
-        const exactMatch = interaction.options.get("exact")??false;
+        const exactMatch = interaction.options.get("exact").value;
         const baseUrl = "https://www.myinstants.com/api/v1";
-        const replyEmbed = new Discord.MessageEmbed();
-        const player = new voice.AudioPlayer();
-        
+
+        var response = null;
+        var components = null;
+
+        // Create colletor for dropdown select options
+        if (stringSelectCollector) stringSelectCollector.stop();
+
+        stringSelectCollector = interaction.channel.createMessageComponentCollector(
+            {
+                filter: (i) => i.customId === 'playsoundSelect', 
+                componentType: ComponentType.StringSelect
+            });
+        stringSelectCollector.on('collect', compInteraction => {
+            interaction.client.selects.get(compInteraction.customId).execute(compInteraction);
+        });
+
+        // Create colletor for button 
+        if (buttonCollector) buttonCollector.stop();
+
+        buttonCollector = interaction.channel.createMessageComponentCollector({
+            filter: (i) => i.customId === 'playsoundNextButton' || i.customId === 'playsoundPrevButton', 
+            componentType: ComponentType.Button
+        });
+        buttonCollector.on('collect', compInteraction => {
+            if (compInteraction.customId === 'playsoundNextButton'){
+                ++pageNum;
+            } else {
+                --pageNum;
+            }
+            interaction.client.buttons.get('playsoundNavButtons').execute(compInteraction, playsoundName, baseUrl, pageNum)
+        });
 
         // Default embed settings
-        replyEmbed.setAuthor({
-            name: `${interaction.user.tag}`,
+        const replyEmbed = new Discord.EmbedBuilder()
+            .setAuthor({
+            name: `${interaction.user.username}`,
             iconURL: interaction.user.avatarURL()
-        }).setColor("LUMINOUS_VIVID_PINK");
+            })
+            .setColor("LuminousVividPink");
 
-        let response = null;
-        if (!exactMatch){
-            try {
-                response = getPlaysounds(playsoundName, baseUrl);
-                response.then(async function(response){
-                    let hasNext;
-                    if (response.count > 10) hasNext = true;
+        if (player.state.status == voice.AudioPlayerStatus.Playing){
+            replyEmbed.setDescription("The bot is currently playing another playsound.")
+
+            return await interaction.reply({
+                embeds: [replyEmbed],
+                ephemeral: true
+            })
+        }
+
+        try {
+
+            response = getPlaysounds(playsoundName, baseUrl, pageNum);
+
+            response
+                .then(async function(response){
                     const results = response.results;
                     
-                    const actionRowButton = new Discord.MessageActionRow();
-                    if (hasNext){
-                        actionRowButton.addComponents(
-                            new Discord.MessageButton()
-                                .setCustomId("playsoundNextButton")
-                                .setLabel("Next")
-                                .setStyle("SECONDARY")
-                        )
-                    }
-
-                    const selectMenu = new Discord.MessageSelectMenu()
-                        .setCustomId("playsoundSelect")
-                        .setPlaceholder("Playsounds");
-
-                    const actionRowSelect = new Discord.MessageActionRow()
-                        .addComponents(selectMenu);
-
-                    // Add all playsounds as option
+                    // No playsound found
                     if (results.length == 0){
-                        selectMenu.addOptions({
-                            label: "EMPTY",
-                            value: "EMPTY"
-                        })
+                        replyEmbed.setDescription('No playsound found');
+                        
+                    // Playsound found
                     } else {
-                        results.forEach(element => {
-                            url = element.sound.split('/');
-                            trimmedUrl = url[url.length-1]
 
-                            selectMenu.addOptions({
-                                label: element.name,
-                                value: trimmedUrl
+                        // Play one playsound only
+                        if (exactMatch){
+
+                            var playsound = results[0];
+                            playPlaysoundExact(playsound, player, interaction);
+            
+                            replyEmbed.setDescription(`Playing: ${playsound.name}`)
+
+                            await interaction.reply({
+                                embeds: [replyEmbed],
+                                ephemeral: true
+                            }) 
+                            
+                        } else {
+                            let hasNext = response.next;
+                            
+                            const actionRowButton = new Discord.ActionRowBuilder();
+                            if (hasNext){
+                                actionRowButton.addComponents(
+                                    new Discord.ButtonBuilder()
+                                        .setCustomId("playsoundNextButton")
+                                        .setLabel("Next")
+                                        .setStyle("Secondary")
+                                )
+                            }
+        
+                            const selectMenu = new Discord.StringSelectMenuBuilder()
+                                .setCustomId("playsoundSelect")
+                                .setPlaceholder("Playsounds");
+        
+                            const actionRowSelect = new Discord.ActionRowBuilder()
+                                .addComponents(selectMenu);
+        
+                            // Add all playsounds as option
+                            results.forEach(element => {
+                                url = element.sound.split('/');
+                                trimmedUrl = url[url.length-1]
+    
+                                selectMenu.addOptions({
+                                    label: element.name,
+                                    value: trimmedUrl
+                                })
+                            });
+                            
+                            components = [actionRowSelect];
+                            if (hasNext) components.push(actionRowButton);
+                            
+                            await interaction.reply({
+                                components: components,
+                                ephemeral: true
                             })
-                        });
+                        }
                     }
 
-                    let components = [actionRowSelect];
-                    if (hasNext) components.push(actionRowButton);
+                }).catch(async function(error){
+                    replyEmbed.setDescription('Failed to play a playsound')
 
-                    // Reply
                     await interaction.reply({
                         embeds: [replyEmbed],
-                        components: components,
                         ephemeral: true
-                    })
-                }).catch (async function(error){
-                    // Reply incase of not being able to retrieve the playsound
-                    await interaction.reply({
-                        content: "Something went wrong! Please try again later",
-                        ephemeral: true
-                    })
-                    console.log(error);
-                })
-            } catch (error) {
-                console.log(error)
-            }  
-        } else {
-            try {
-                response = getExactPlaysound(playsoundName, baseUrl);
-                response.then(function(result){
-                    playPlaysound(result, player, interaction);
-                }).catch(async function(error){
-                    await interaction.reply({
-                        content: "Something went wrong! Please try again later",
-                        ephemeral: true
-                    })
+                    }) 
+
                     console.log(error)
                 })
-            } catch (error) {
-                
-                console.log(error);
-            }
-        }
-        
+
+        } catch (error) {
+            replyEmbed.setDescription('Something went wrong, please try again')
+
+            console.log(error)
+        } 
     } 
-}
-
-/**
- * Plays the playsound in the voice channel the user is in
- * @param {HttpResponse} response 
- * @param {voice.AudioPlayer} player 
- * @param {Discord.BaseCommandInteraction} interaction 
- */
-function playPlaysound(response, player, interaction){
-    let resource = voice.createAudioResource(response.sound);
-
-    // Establishing a connection to the channel
-    let connection = voice.getVoiceConnection(interaction.guildId);
-    if (!connection){
-        connection = voice.joinVoiceChannel({
-            channelId: interaction.member.voice.channelId,
-            guildId: interaction.guildId,
-            adapterCreator: interaction.guild.voiceAdapterCreator
-        })
-    }
-    
-    // Play the resource
-    player.play(resource);
-    connection.subscribe(player);
-}
-
-// Get the exact playsound specified by user
-function getExactPlaysound(playsoundName, baseUrl){
-    return new Promise((resolve, reject)=> {
-        axios({
-            url: `/instants/${playsoundName}`,
-            baseURL: baseUrl,
-            method: "get",
-            timeout: 3000
-        }).then((response)=>{
-            resolve(response.data);
-        }).catch((error)=>{
-            reject(error);
-        })
-    })
-}
-
-// Get a list of playsounds that matches the users' input
-function getPlaysounds(playsoundName, baseUrl, pageNum=1){
-
-    // Construct parameter
-    let params = {
-        name: playsoundName,
-        page: pageNum
-    };
-
-    return new Promise((resolve, reject)=>{
-        axios({
-            url: "/instants",
-            baseURL: baseUrl,
-            method: "get",
-            params: params,
-            timeout: 3000
-        }).then((response)=>{
-            resolve(response.data);
-        }).catch((error)=>{
-            reject(error);
-        })
-    })
 }
