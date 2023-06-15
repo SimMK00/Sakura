@@ -11,16 +11,19 @@ module.exports = {
      *  @param {Discord.BaseCommandInteraction} interaction  
      */
     async execute(interaction){
+
+        const embed = new Discord.EmbedBuilder()
+            .setAuthor({
+                name: `${interaction.user.username}`,
+                iconURL: interaction.user.avatarURL()
+            })
+            .setColor("LuminousVividPink")
+
+        var attachment;
+
         try {
             const flipnum = Math.round(Math.random());
-            const embed = new Discord.EmbedBuilder()
-                .setAuthor({
-                    name: `${interaction.user.username}`,
-                    iconURL: interaction.user.avatarURL()
-                })
-                .setColor("LuminousVividPink")
-            
-            var attachment;
+
             if (flipnum == 0){
                 attachment = new Discord.AttachmentBuilder('./images/head.png');
 
@@ -35,26 +38,16 @@ module.exports = {
                     .setImage(('attachment://tail.png'))
             }
 
+        } catch (error) {
+
+            embed.setDescription("Failed to perform command")
+
+            console.log(error)
+        } finally {
             await interaction.reply({
                 embeds: [embed],
                 files: [attachment],
             })
-
-        } catch (error) {
-
-            const embed = new Discord.EmbedBuilder()
-            .setAuthor({
-                name: `${interaction.user.username}`,
-                iconURL: interaction.user.avatarURL()
-            })
-            .setColor("LuminousVividPink")
-            .setDescription("Failed to perform command")
-
-            await interaction.reply({
-                embeds: [embed],
-            })
-
-            console.log(error)
         }
     } 
 }

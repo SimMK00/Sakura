@@ -16,44 +16,32 @@ module.exports = {
      * @param {Discord.BaseCommandInteraction} interaction 
      */
     async execute(interaction){
+        const embed = new Discord.EmbedBuilder()
+            .setAuthor({
+                name: `${interaction.user.tag}`,
+                iconURL: interaction.user.avatarURL()
+            })
+            .setTitle(`Bulk delete`)
+            .setColor("LuminousVividPink")
 
         try {
             const numDelete = interaction.options.getInteger("amount");
-            const embed = new Discord.EmbedBuilder()
-                .setAuthor({
-                    name: `${interaction.user.tag}`,
-                    iconURL: interaction.user.avatarURL()
-                })
-                .setTitle(`Bulk delete`)
-                .setDescription(`${numDelete} messages deleted`)
-                .setColor("LuminousVividPink")
+
+            embed.setDescription(`${numDelete} messages deleted`);
 
             await interaction.channel.bulkDelete(numDelete)
 
-            await interaction.reply({
-                embeds: [embed],
-                ephemeral: true
-            }).then(setTimeout(() => {
-                interaction.deleteReply()
-            }, 2000))
-
         } catch(error){
 
-            const embed = new Discord.EmbedBuilder()
-                .setAuthor({
-                    name: `${interaction.user.username}`,
-                    iconURL: interaction.user.avatarURL()
-                })
-                .setColor("LuminousVividPink")
-                .setDescription("Failed to delete messages")
-
-            await interaction.reply({
-                embeds: [embed],
-                ephemeral: true,
-            })
+            embed.setDescription("Failed to delete messages")
 
             console.log(error)
 
+        } finally {
+            await interaction.reply({
+                embeds: [embed],
+                ephemeral: true
+            })
         }
     }
 }

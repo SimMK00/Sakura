@@ -1,4 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
+const Voice = require("@discordjs/voice");
 const Discord = require("discord.js");
 
 module.exports = {
@@ -10,43 +11,29 @@ module.exports = {
      *  @param {Discord.BaseCommandInteraction} interaction  
      */
     async execute(interaction){
+        const embed = new Discord.EmbedBuilder()
+            .setAuthor({
+                name: `${interaction.user.username}`,
+                iconURL: interaction.user.avatarURL()
+            })
+            .setColor("LuminousVividPink")
+
         try {
+            const connection = Voice.getVoiceConnection(interaction.guild.id)
 
-            if (interaction.guild.voiceConnection){
-
-                interaction.guild.voiceConnection.disconnect();
-
-                const embed = new Discord.EmbedBuilder()
-                .setAuthor({
-                    name: `${interaction.user.username}`,
-                    iconURL: interaction.user.avatarURL()
-                })
-                .setColor("LuminousVividPink")
-                .setDescription("Left voice channel")
-
-                await interaction.reply({
-                    embeds: [embed],
-                    ephemeral: true,
-                })
+            if (connection){
+                connection.destroy();
+                embed.setDescription("Left voice channel")
             } else {
-
+                embed.setDescription("The bot is not currently in any voice channel")
             }
-           
         } catch (error) {
-            const embed = new Discord.EmbedBuilder()
-                .setAuthor({
-                    name: `${interaction.user.username}`,
-                    iconURL: interaction.user.avatarURL()
-                })
-                .setColor("LuminousVividPink")
-                .setDescription("Failed to leave the voice channel")
-
+            embed.setDescription("Failed to leave the voice channel")
+        } finally {
             await interaction.reply({
                 embeds: [embed],
-                ephemeral: true,
+                ephemeral: true
             })
-
-            console.log(error)
         }
        
     }

@@ -25,38 +25,32 @@ module.exports = {
      * @param {Discord.BaseCommandInteraction} interaction 
      */
     async execute(interaction) {
+
+        const embed = new Discord.EmbedBuilder()
+            .setAuthor({
+                name: `${interaction.user.username}`,
+                iconURL: interaction.user.avatarURL()
+            })
+            .setColor("LuminousVividPink")
+
         try {
             const user = interaction.options.getUser("target");
             const size = interaction.options.getInteger("size");
-            const embed = new Discord.EmbedBuilder()
-                .setAuthor({
-                    name: `${interaction.user.username}`,
-                    iconURL: interaction.user.avatarURL()
-                })
+            embed
                 .setTitle(`Avatar of ${user.username}`)
                 .setImage(user.avatarURL({size: size}))
-                .setColor("LuminousVividPink")
-
-            await interaction.reply({
-                embeds: [embed],
-                ephemeral: true,
-            })
 
         } catch (error){
-            const embed = new Discord.EmbedBuilder()
-                .setAuthor({
-                    name: `${interaction.user.username}`,
-                    iconURL: interaction.user.avatarURL()
-                })
-                .setColor("LuminousVividPink")
+            embed 
                 .setDescription("Failed to get avatar of user")
 
+            console.log(error)
+        } finally {
             await interaction.reply({
                 embeds: [embed],
                 ephemeral: true,
             })
 
-            console.log(error)
         }
     }
 }

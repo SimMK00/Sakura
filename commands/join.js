@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const voice = require("@discordjs/voice");
+const Voice = require("@discordjs/voice");
 const Discord = require("discord.js");
 
 module.exports = {
@@ -11,50 +11,37 @@ module.exports = {
      *  @param {Discord.BaseCommandInteraction} interaction  
      */
     async execute(interaction){
+
+        // Default embed
+        const embed = new Discord.EmbedBuilder()
+            .setAuthor({
+                name: `${interaction.user.username}`,
+                iconURL: interaction.user.avatarURL()
+            })
+            .setColor("LuminousVividPink")
         try {
 
             if (!interaction.member.voice.channel){
-                return interaction.reply('You need to be in a voice channel!')
+                embed.setDescription('You need to be in a voice channel')
             } else {
 
-                const connection = voice.joinVoiceChannel({
+                Voice.joinVoiceChannel({
                     channelId: interaction.member.voice.channel.id,
                     guildId: interaction.guild.id,
                     adapterCreator: interaction.guild.voiceAdapterCreator
                 })
                 
-                interaction.guild.voiceConnection = connection;
-                
-                const embed = new Discord.EmbedBuilder()
-                .setAuthor({
-                    name: `${interaction.user.username}`,
-                    iconURL: interaction.user.avatarURL()
-                })
-                .setColor("LuminousVividPink")
-                .setDescription(`Joined voice channel: ${interaction.member.voice.channel.name}`)
-        
-                await interaction.reply({
-                    embeds: [embed],
-                    ephemeral: true,
-                })
-        
-
+                embed.setDescription(`Joined voice channel: ${interaction.member.voice.channel.name}`)
             }
         } catch (error) {
-            const embed = new Discord.EmbedBuilder()
-                .setAuthor({
-                    name: `${interaction.user.username}`,
-                    iconURL: interaction.user.avatarURL()
-                })
-                .setColor("LuminousVividPink")
-                .setDescription("Failed to join the voice channel")
+            embed.setDescription("Failed to join the voice channel")
 
+            console.log(error)
+        } finally {
             await interaction.reply({
                 embeds: [embed],
                 ephemeral: true,
             })
-
-            console.log(error)
         }
        
     }
