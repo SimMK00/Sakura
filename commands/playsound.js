@@ -1,14 +1,12 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { getAudioPlayer } = require('../state/playerState.js');
-const { playPlaysoundExact, getPlaysounds} = require('../utils/audioUtils.js');
+const { getAudioPlayer, getPlaysounds, playPlaysoundSelect} = require('../utils/audioUtils.js');
 const voice = require("@discordjs/voice"); 
 const Discord = require('discord.js');
-const player = getAudioPlayer();
 const { ComponentType } = require('discord.js');
 
 var pageNum = 1;
-var stringSelectCollector = null;
-var buttonCollector = null;
+var playsoundSelectController = null;
+var playsoundButtonCollector = null;
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -17,11 +15,7 @@ module.exports = {
         .addStringOption(option=>
             option.setName("playsoundname")
             .setRequired(true)
-            .setDescription("Name of playsound"))
-        .addBooleanOption(option=>
-            option.setName("exact")
-            .setRequired(true)
-            .setDescription("Search for exact playsound")),
+            .setDescription("Name of playsound")),
     /**
      * 
      * @param {Discord.BaseCommandInteraction} interaction 
@@ -29,38 +23,37 @@ module.exports = {
     async execute(interaction){
 
         const playsoundName = interaction.options.get("playsoundname").value;
-        const exactMatch = interaction.options.get("exact").value;
         const baseUrl = "https://www.myinstants.com/api/v1";
 
         var response = null;
         var components = null;
 
         // Create colletor for dropdown select options
-        if (stringSelectCollector) stringSelectCollector.stop();
+        if (playsoundSelectController) playsoundSelectController.stop();
 
-        stringSelectCollector = interaction.channel.createMessageComponentCollector(
+        playsoundSelectController = interaction.channel.createMessageComponentCollector(
             {
                 filter: (i) => i.customId === 'playsoundSelect', 
                 componentType: ComponentType.StringSelect
             });
-        stringSelectCollector.on('collect', compInteraction => {
-            interaction.client.selects.get(compInteraction.customId).execute(compInteraction);
+        playsoundSelectController.on('collect', compInteraction => {
+            updateSelectOptions(compInteraction)
         });
 
         // Create colletor for button 
-        if (buttonCollector) buttonCollector.stop();
+        if (playsoundButtonCollector) playsoundButtonCollector.stop();
 
-        buttonCollector = interaction.channel.createMessageComponentCollector({
+        playsoundButtonCollector = interaction.channel.createMessageComponentCollector({
             filter: (i) => i.customId === 'playsoundNextButton' || i.customId === 'playsoundPrevButton', 
             componentType: ComponentType.Button
         });
-        buttonCollector.on('collect', compInteraction => {
+        playsoundButtonCollector.on('collect', compInteraction => {
             if (compInteraction.customId === 'playsoundNextButton'){
                 ++pageNum;
             } else {
                 --pageNum;
             }
-            interaction.client.buttons.get('playsoundNavButtons').execute(compInteraction, playsoundName, baseUrl, pageNum)
+            updateNavButtons(compInteraction, playsoundName, baseUrl, pageNum);
         });
 
         // Default embed settings
@@ -71,8 +64,10 @@ module.exports = {
             })
             .setColor("LuminousVividPink");
 
-        if (player.state.status == voice.AudioPlayerStatus.Playing){
-            replyEmbed.setDescription("The bot is currently playing another playsound.")
+        let player = getAudioPlayer(interaction);
+        let songQueue = interaction.client.queue.get(interaction.guild.id)
+        if (player.state.status == voice.AudioPlayerStatus.Playing || songQueue){
+            replyEmbed.setDescription("Please make sure there are no songs/playsounds currently in queue or playing")
 
             return await interaction.reply({
                 embeds: [replyEmbed],
@@ -94,59 +89,43 @@ module.exports = {
                         
                     // Playsound found
                     } else {
-
-                        // Play one playsound only
-                        if (exactMatch){
-
-                            var playsound = results[0];
-                            playPlaysoundExact(playsound, player, interaction);
-            
-                            replyEmbed.setDescription(`Playing: ${playsound.name}`)
-
-                            await interaction.reply({
-                                embeds: [replyEmbed],
-                                ephemeral: true
-                            }) 
-                            
-                        } else {
-                            let hasNext = response.next;
-                            
-                            const actionRowButton = new Discord.ActionRowBuilder();
-                            if (hasNext){
-                                actionRowButton.addComponents(
-                                    new Discord.ButtonBuilder()
-                                        .setCustomId("playsoundNextButton")
-                                        .setLabel("Next")
-                                        .setStyle("Secondary")
-                                )
-                            }
-        
-                            const selectMenu = new Discord.StringSelectMenuBuilder()
-                                .setCustomId("playsoundSelect")
-                                .setPlaceholder("Playsounds");
-        
-                            const actionRowSelect = new Discord.ActionRowBuilder()
-                                .addComponents(selectMenu);
-        
-                            // Add all playsounds as option
-                            results.forEach(element => {
-                                url = element.sound.split('/');
-                                trimmedUrl = url[url.length-1]
-    
-                                selectMenu.addOptions({
-                                    label: element.name,
-                                    value: trimmedUrl
-                                })
-                            });
-                            
-                            components = [actionRowSelect];
-                            if (hasNext) components.push(actionRowButton);
-                            
-                            await interaction.reply({
-                                components: components,
-                                ephemeral: true
-                            })
+                        let hasNext = response.next;
+                        
+                        const actionRowButton = new Discord.ActionRowBuilder();
+                        if (hasNext){
+                            actionRowButton.addComponents(
+                                new Discord.ButtonBuilder()
+                                    .setCustomId("playsoundNextButton")
+                                    .setLabel("Next")
+                                    .setStyle("Secondary")
+                            )
                         }
+    
+                        const selectMenu = new Discord.StringSelectMenuBuilder()
+                            .setCustomId("playsoundSelect")
+                            .setPlaceholder("Playsounds");
+    
+                        const actionRowSelect = new Discord.ActionRowBuilder()
+                            .addComponents(selectMenu);
+    
+                        // Add all playsounds as option
+                        results.forEach(element => {
+                            url = element.sound.split('/');
+                            trimmedUrl = url[url.length-1]
+
+                            selectMenu.addOptions({
+                                label: element.name,
+                                value: trimmedUrl
+                            })
+                        });
+                        
+                        components = [actionRowSelect];
+                        if (hasNext) components.push(actionRowButton);
+                        
+                        await interaction.reply({
+                            components: components,
+                            ephemeral: true
+                        })
                     }
 
                 }).catch(async function(error){
@@ -166,4 +145,91 @@ module.exports = {
             console.log(error)
         } 
     } 
+}
+
+
+async function updateNavButtons(interaction, playsoundName, baseUrl, pageNum){
+    const response = getPlaysounds(playsoundName, baseUrl, pageNum)
+
+    response
+        .then(async function(response){
+            var hasNext = response.next;
+            var hasPrev = response.previous;
+            
+            const results = response.results;
+            const actionRowButton = new Discord.ActionRowBuilder();
+            
+            if (hasPrev){
+                actionRowButton.addComponents(
+                    new Discord.ButtonBuilder()
+                        .setCustomId("playsoundPrevButton")
+                        .setLabel("Previous")
+                        .setStyle("Secondary")
+                )
+            }
+
+            if (hasNext){
+                actionRowButton.addComponents(
+                    new Discord.ButtonBuilder()
+                        .setCustomId("playsoundNextButton")
+                        .setLabel("Next")
+                        .setStyle("Secondary")
+                )
+            }
+
+            const selectMenu = new Discord.StringSelectMenuBuilder()
+                .setCustomId("playsoundSelect")
+                .setPlaceholder("Playsounds");
+
+            const actionRowSelect = new Discord.ActionRowBuilder()
+                .addComponents(selectMenu);
+
+            // Add all playsounds as option
+            results.forEach(element => {
+                url = element.sound.split('/');
+                trimmedUrl = url[url.length-1]
+
+                selectMenu.addOptions({
+                    label: element.name,
+                    value: trimmedUrl
+                })
+            });
+
+            components = [actionRowSelect];
+            if (hasNext) components.push(actionRowButton);
+
+            await interaction.update({
+                components: components,
+                ephemeral: true
+            })
+
+        }).catch(async function(error){
+            console.log(error)
+        })
+}
+
+async function updateSelectOptions(interaction){
+    const player = getAudioPlayer(interaction);
+    const baseUrl = "http://www.myinstants.com/media/sounds/"
+    if (player.state.status != voice.AudioPlayerStatus.Playing){
+        // Disable interaction failed message
+        await interaction.deferUpdate();
+
+        if (interaction.values[0] == "EMPTY") return;
+        playPlaysoundSelect(baseUrl, player, interaction);
+    } else {
+
+        const replyEmbed = new Discord.EmbedBuilder()
+            .setAuthor({
+            name: `${interaction.user.username}`,
+            iconURL: interaction.user.avatarURL()
+            })
+            .setColor("LuminousVividPink")
+            .setDescription("The bot is currently playing another audio track.")
+        
+        await interaction.reply({
+            embeds: [replyEmbed],
+            ephemeral: true
+        })
+    }
 }
