@@ -1,16 +1,16 @@
 const Discord = require('discord.js');
-const { Intents } = require('discord.js');
-const client = new Discord.Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_VOICE_STATES] });
+const { GatewayIntentBits } = require('discord.js');
+const client = new Discord.Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildVoiceStates] });
 const fs = require('fs');
 const { join } = require('path');
 const { REST } = require('@discordjs/rest');
-const { Routes, ComponentType } = require('discord-api-types/v9');
+const { Routes } = require('discord-api-types/v9');
 require('dotenv').config();
 
-
-client.queue = new Map();
+// Initialize collections for saving state in each server
+client.queue = new Discord.Collection();
 client.commands = new Discord.Collection();
-client.selects = new Discord.Collection();
+client.players = new Discord.Collection();
 
 //Importing commands
 const commands = [];
@@ -20,14 +20,6 @@ for (const file of commandFiles) {
 	client.commands.set(command.data.name, command);
 	commands.push(command.data.toJSON());
 }
-
-//Importing selects
-const selectFiles = fs.readdirSync(join(__dirname, "selects")).filter((file) => file.endsWith(".js"));
-for (const file of selectFiles) {
-	const select = require(join(__dirname, "selects", `${file}`));
-	client.selects.set(select.name, select);
-}
-
 
 //Registering commands via rest
 const rest = new REST({version: '9'}).setToken(process.env.TOKEN);
@@ -51,22 +43,7 @@ client.once('ready', () => {
 	console.log('Ready!');
 });
 
-//Executing commands based on user input
-// client.on("messageCreate", async msg => {
-//   if (msg.content.startsWith(prefix)) {
-//     let args = msg.content.substring(prefix.length).split(" ");
-//     let command = client.commands.get(args[0]);
 
-//     try {
-//       command.execute(msg, args)
-//     } catch (error) {
-//       console.error(error);
-//     }
-//   } else {
-//     //   console.log(msg.content)
-//   }
-// })
-var collector;
 client.on('interactionCreate', async (interaction)=>{
 	if (!interaction.isCommand()) return;
 
@@ -85,16 +62,8 @@ client.on('interactionCreate', async (interaction)=>{
 	}
 
 	// Dispose old collector if available
-	if (collector) collector.stop();
-	
-	// Create new collector 
-	collector = interaction.channel.createMessageComponentCollector({ componentType: ComponentType.SelectMenu});
-	collector.on('collect', compInteraction => {
-		client.selects.get(compInteraction.customId).execute(compInteraction);
-	});
+
 })
-
-
 
 // login to Discord with your app's token
 client.login(process.env.TOKEN);
