@@ -78,9 +78,13 @@ module.exports = {
 
 			interaction.client.queue.set(interaction.guild.id, songQueue)
 
-			await interaction.channel.send({
-				embeds: [embed],
+			let message = await interaction.channel.send({
+				embeds: [embed]
 			})
+
+			setTimeout(() => {
+				message.delete().catch(console.error);
+			}, 3000);
 
 		} catch (error) {
 
@@ -111,8 +115,8 @@ function playerListener(player, connection, interaction){
 			let songQueue = interaction.client.queue.get(interaction.guild.id);
 			if (songQueue && songQueue.length != 0){
 				songQueue.shift();
-				playSong(player, connection, songQueue, interaction)
 			}
+			playSong(player, connection, songQueue, interaction)
 		})
 	} catch (error) {
 		console.log(error)
@@ -133,7 +137,6 @@ function connectionListener(connection, interaction){
 
 	connection.addListener(Voice.VoiceConnectionStatus.Destroyed, ()=>{
 		interaction.client.queue.set(interaction.guild.id, null);
-		interaction.deleteReply();
 	})
 
 	connection.addListener(Voice.VoiceConnectionStatus.Disconnected, ()=>{
@@ -151,7 +154,9 @@ function connectionListener(connection, interaction){
  */
 async function playSong(player, connection, songQueue, interaction){
 	try {
-		if (songQueue.length == 0) {
+		const embed = createEmbedBase(interaction);
+
+		if (!songQueue || songQueue.length == 0) {
 			interaction.client.queue.set(interaction.guild.id, null);
 			return
 		} else {
@@ -165,8 +170,7 @@ async function playSong(player, connection, songQueue, interaction){
 	
 		player.play(resource);
 		connection.subscribe(player);
-	
-		const embed = createEmbedBase(interaction);
+
 		embed.setDescription(`Currently playing:\n**${songQueue[0].title} (${songQueue[0].durationRaw})**`);
 
 		const actionRowButton = buildActionRow(false);
@@ -212,30 +216,46 @@ async function updateSongStatus(compInteraction){
 		switch (compInteraction.customId){
 			case 'playSongPauseButton':
 				actionRowButton = buildActionRow(true);
+
+				await compInteraction.update({
+					embeds: [embed],
+					components: [actionRowButton]
+				})
+
 				player.pause();
 				break;
 			case 'playSongResumeButton':
 				actionRowButton = buildActionRow(false);
+
+				await compInteraction.update({
+					embeds: [embed],
+					components: [actionRowButton]
+				})
+
 				player.unpause();
 				break;
 			case 'playSongSkipButton':
 				actionRowButton = buildActionRow(false);
+				
+				if (songQueue.length > 1){
+					embed.setDescription(`Currently playing:\n**${songQueue[1].title} (${songQueue[1].durationRaw})**`);
+					await compInteraction.update({
+						embeds: [embed],
+						components: [actionRowButton]
+					})
+				} else {
+					await compInteraction.message.delete();
+				}
+				
 				player.stop();
 				player.unpause();
 				break;
 			case 'playSongStopButton':
+				await compInteraction.message.delete();
 				player.stop();
-				actionRowButton = buildActionRow(false);
 				compInteraction.client.queue.set(compInteraction.guild.id, null);
 				break;
 		}
-
-		await compInteraction.update({
-			embeds: [embed],
-			components: [actionRowButton]
-		})
-
-
 	} catch (error) {
 		console.log(error)	
 	}
